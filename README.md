@@ -2,7 +2,7 @@
 
 A production-quality hospitality frontend built as a technical assignment. Users can search hotel availability by destination, dates and occupancy, filter results client-side, and compare up to five properties side-by-side with Recharts visualisations.
 
-> **Live demo:** _[Deploy URL here]_
+> **Live demo:** [https://otelier-hotel-demo.vercel.app/](https://otelier-hotel-demo.vercel.app/)
 
 ---
 
