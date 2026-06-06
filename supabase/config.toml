@@ -1,0 +1,11 @@
+# Minimal Supabase project config for Edge Functions.
+# Run `supabase link --project-ref <your-project-ref>` before deploy.
+
+[api]
+enabled = true
+
+[functions.hotelbeds-proxy]
+enabled = true
+verify_jwt = true
+
+# hotelbeds-proxy also verifies the session in function code before calling Hotelbeds.

@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+/* Minimal global baseline — component styling uses Tailwind utilities */
+body {
+  margin: 0;
+}
