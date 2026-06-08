@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+
+# Build output (Docker does its own build inside the container)
+dist
+
+# Git
+.git
+.gitignore
+
+# Editor / IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Env files (secrets must never go into the image layer)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+coverage

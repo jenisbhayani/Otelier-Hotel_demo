@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  hotel-search:
+    image: hotel-search-otelier:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # These are passed at build time so Vite can embed them.
+        # Copy .env.example → .env and fill in real values before building.
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+    container_name: hotel-search-otelier
+    ports:
+      - "3000:80"       # Visit http://localhost:3000 in your browser
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
