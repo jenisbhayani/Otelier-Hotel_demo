@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import { CompareProvider } from './context/CompareContext'
+import { SearchProvider } from './context/SearchContext'
 import GuestRoute from './routes/GuestRoute'
 import ProtectedRoute from './routes/ProtectedRoute'
 import RootRedirect from './routes/RootRedirect'
@@ -87,7 +88,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <CompareProvider>
-        <div className="min-h-screen bg-slate-50 text-slate-900">
+        <SearchProvider>
+          <div className="min-h-screen bg-slate-50 text-slate-900">
           <AppHeader />
 
           <Routes>
@@ -127,6 +129,7 @@ export default function App() {
             <Route path="*" element={<RootRedirect />} />
           </Routes>
         </div>
+        </SearchProvider>
       </CompareProvider>
     </BrowserRouter>
   )

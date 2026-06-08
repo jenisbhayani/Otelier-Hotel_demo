@@ -45,7 +45,7 @@ export default function PriceComparisonChart({ hotels }) {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 10, right: 24, left: 16, bottom: 24 }}>
+      <BarChart data={data} margin={{ top: 10, right: 24, left: 16, bottom: 48 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
 
         <XAxis
@@ -53,7 +53,7 @@ export default function PriceComparisonChart({ hotels }) {
           tick={<HotelNameTick />}
           tickLine={false}
           axisLine={{ stroke: '#e2e8f0' }}
-          label={{ value: 'Hotel', position: 'insideBottom', offset: -16, fontSize: 12, fill: '#64748b' }}
+          label={{ value: 'Hotel', position: 'bottom', offset: 5, fontSize: 12, fill: '#64748b' }}
         />
 
         <YAxis

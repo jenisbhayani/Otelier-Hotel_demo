@@ -39,7 +39,7 @@ function canUseLocalStorage() {
   }
 }
 
-function getCacheKey(action, params) {
+export function getCacheKey(action, params) {
   return `hotelbeds-cache:${action}:${stableStringify(params ?? {})}`
 }
 
@@ -153,7 +153,7 @@ async function parseProxyErrorBody(invokeError) {
 /**
  * Invoke the Supabase Edge Function proxy. Never touches Hotelbeds secrets or signatures.
  *
- * @param {string} action - destinations | searchHotels | hotelDetails | checkAvailability
+ * @param {string} action - destinations | searchHotels | hotelDetails
  * @param {object} [params] - Action-specific parameters
  * @returns {Promise<object>} Normalized `data` payload from the proxy
  */
@@ -166,11 +166,11 @@ export async function hotelbedsCall(action, params = {}) {
     if (cachedData) {
       const resolved = resolveCachedResponse(action, cachedData)
       if (resolved) {
-        console.log(`[Hotelbeds] Cache hit for ${action}`)
+        if (import.meta.env.DEV) console.log(`[Hotelbeds] Cache hit for ${action}`)
         return resolved
       }
       // Cached data exists but shape doesn't match — evict and re-fetch
-      console.warn(`[Hotelbeds] Evicting malformed cache entry for ${action}`)
+      if (import.meta.env.DEV) console.warn(`[Hotelbeds] Evicting malformed cache entry for ${action}`)
       try { window.localStorage.removeItem(cacheKey) } catch { /* ignore */ }
     }
   }
@@ -183,20 +183,20 @@ export async function hotelbedsCall(action, params = {}) {
     })
   }
 
-  console.log(`[Hotelbeds] Calling edge function: ${action}`, params)
+  if (import.meta.env.DEV) console.log(`[Hotelbeds] Calling edge function: ${action}`, params)
   const { data, error } = await supabase.functions.invoke(FUNCTION_NAME, {
     body: { action, params },
   })
 
   if (error) {
     const apiError = await parseProxyErrorBody(error)
-    console.error(`[Hotelbeds] Invoke error for ${action}:`, apiError)
+    if (import.meta.env.DEV) console.error(`[Hotelbeds] Invoke error for ${action}:`, apiError)
     throw new HotelbedsError(apiError.message, apiError)
   }
 
   if (!data?.success) {
     const apiError = data?.error ?? {}
-    console.error(`[Hotelbeds] Proxy error for ${action}:`, data)
+    if (import.meta.env.DEV) console.error(`[Hotelbeds] Proxy error for ${action}:`, data)
     throw new HotelbedsError(apiError.message ?? 'Hotel search request failed.', {
       code: apiError.code ?? 'PROXY_ERROR',
       status: apiError.status ?? 0,
@@ -216,6 +216,25 @@ export async function hotelbedsCall(action, params = {}) {
 /** @param {{ countryCodes?: string, language?: string, fields?: string, codes?: string, from?: number, to?: number }} params */
 export function getDestinations(params = {}) {
   return hotelbedsCall('destinations', params)
+}
+
+/**
+ * Synchronously read the destinations list from the localStorage cache.
+ * Returns an already-sorted array if the cache is valid and unexpired,
+ * or null if the cache is absent / expired / malformed.
+ *
+ * Use this to seed useState() so there is no loading flash on repeat visits.
+ *
+ * @param {object} params - The same params object passed to getDestinations()
+ * @returns {Array|null}
+ */
+export function getDestinationsCached(params = {}) {
+  const key = getCacheKey('destinations', params)
+  const raw = getCachedData(key)
+  if (!raw) return null
+  const resolved = resolveCachedResponse('destinations', raw)
+  if (!resolved || !Array.isArray(resolved.destinations)) return null
+  return resolved.destinations
 }
 
 /**
@@ -242,11 +261,4 @@ export function searchHotels(params) {
 export function getHotelDetails(params) {
   const codes = params.codes ?? params.hotelCodes
   return hotelbedsCall('hotelDetails', { ...params, codes })
-}
-
-/** @param {{ rateKeys: string[] | string }} params - Required when rateType is RECHECK */
-export function checkAvailability(params) {
-  const rateKeys = params.rateKeys ?? params.rateKey
-  const list = Array.isArray(rateKeys) ? rateKeys : rateKeys != null ? [rateKeys] : []
-  return hotelbedsCall('checkAvailability', { rateKeys: list })
 }

@@ -109,33 +109,30 @@ function DestinationFilter({ available, selected, onToggle }) {
  * On desktop it renders as a persistent left column.
  * On mobile a toggle button shows/hides it as a top panel.
  *
+ * Props are grouped into two objects to avoid a long flat prop list:
+ *
  * @param {{
- *   filters: { name: string, stars: Set<number>, facilities: Set<string>, destinations: Set<string> },
- *   options: { stars: number[], facilities: string[], destinations: { code: string, label: string }[] },
- *   filteredCount: number,
- *   totalCount: number,
- *   activeCount: number,
- *   isEmpty: boolean,
- *   onNameChange: (v: string) => void,
- *   onToggleStar: (n: number) => void,
- *   onToggleFacility: (name: string) => void,
- *   onToggleDestination: (code: string) => void,
- *   onClearAll: () => void,
+ *   state: {
+ *     filters: { name: string, stars: Set<number>, facilities: Set<string>, destinations: Set<string> },
+ *     options: { stars: number[], facilities: string[], destinations: { code: string, label: string }[] },
+ *     filteredCount: number,
+ *     totalCount: number,
+ *     activeCount: number,
+ *     isEmpty: boolean,
+ *   },
+ *   handlers: {
+ *     onNameChange: (v: string) => void,
+ *     onToggleStar: (n: number) => void,
+ *     onToggleFacility: (name: string) => void,
+ *     onToggleDestination: (code: string) => void,
+ *     onClearAll: () => void,
+ *   },
  * }} props
  */
-export default function FilterSidebar({
-  filters,
-  options,
-  filteredCount,
-  totalCount,
-  activeCount,
-  isEmpty,
-  onNameChange,
-  onToggleStar,
-  onToggleFacility,
-  onToggleDestination,
-  onClearAll,
-}) {
+export default function FilterSidebar({ state, handlers }) {
+  const { filters, options, filteredCount, totalCount, activeCount, isEmpty } = state
+  const { onNameChange, onToggleStar, onToggleFacility, onToggleDestination, onClearAll } = handlers
+
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const panelContent = (

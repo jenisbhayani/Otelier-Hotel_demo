@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { contentString } from '../utils/hotelDisplay'
+import { FormAlert, INPUT_DISABLED_CLASS } from './ui'
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10)
@@ -97,14 +98,7 @@ export default function SearchForm({
         Choose a destination and travel dates to find available stays.
       </p>
 
-      {(validationError || destinationsError) && (
-        <div
-          className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-          role="alert"
-        >
-          {validationError || destinationsError}
-        </div>
-      )}
+        <FormAlert message={validationError || destinationsError} className="mt-4" />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2 lg:col-span-1">
@@ -117,7 +111,7 @@ export default function SearchForm({
             onChange={(e) => setDestinationCode(e.target.value)}
             disabled={isDisabled || Boolean(destinationsError)}
             required
-            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
+            className={`${INPUT_DISABLED_CLASS} bg-white`}
           >
             <option value="">
               {destinationsLoading ? 'Loading destinations…' : 'Select destination'}
@@ -142,7 +136,7 @@ export default function SearchForm({
             onChange={(e) => handleCheckInChange(e.target.value)}
             disabled={isDisabled}
             required
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
+            className={INPUT_DISABLED_CLASS}
           />
         </div>
 
@@ -158,7 +152,7 @@ export default function SearchForm({
             onChange={(e) => setCheckOut(e.target.value)}
             disabled={isDisabled}
             required
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
+            className={INPUT_DISABLED_CLASS}
           />
         </div>
 
@@ -172,10 +166,10 @@ export default function SearchForm({
             min={1}
             max={6}
             value={adults}
-            onChange={(e) => setAdults(e.target.value)}
+            onChange={(e) => setAdults(Number(e.target.value))}
             disabled={isDisabled}
             required
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
+            className={INPUT_DISABLED_CLASS}
           />
         </div>
       </div>

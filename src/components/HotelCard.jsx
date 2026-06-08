@@ -1,8 +1,10 @@
+import { useCompare } from '../context/CompareContext'
+import { parseStars } from '../utils/filterHotels'
+
 // ─── Star renderer ────────────────────────────────────────────────────────────
 
 function StarRating({ categoryLabel }) {
-  const match = String(categoryLabel ?? '').match(/^(\d)/)
-  const stars = match ? Number(match[1]) : 0
+  const stars = parseStars(categoryLabel)
 
   if (stars === 0) {
     return <span className="text-xs text-slate-400">{categoryLabel || 'Unrated'}</span>
@@ -50,6 +52,9 @@ function ImagePlaceholder() {
  *  - Min. price per night with currency
  *  - Compare checkbox
  *
+ * Compare selection is read/written directly via CompareContext —
+ * no props needed from the parent list.
+ *
  * @param {{
  *   hotel: {
  *     code: string,
@@ -61,18 +66,18 @@ function ImagePlaceholder() {
  *     priceLabel: string,
  *     imageUrl?: string | null,
  *   },
- *   isSelectedForCompare?: boolean,
- *   onCompareChange?: (code: string, selected: boolean) => void,
  * }} props
  */
-export default function HotelCard({
-  hotel,
-  isSelectedForCompare = false,
-  onCompareChange,
-}) {
-  const compareId = `compare-${hotel.code}`
+export default function HotelCard({ hotel }) {
+  const { selectedCodes, toggleHotel } = useCompare()
+  const isSelectedForCompare = selectedCodes.has(hotel.code)
 
+  const compareId = `compare-${hotel.code}`
   const hasPrice = Number.isFinite(hotel.price) && hotel.price > 0
+
+  function handleCompareChange(e) {
+    toggleHotel(hotel, e.target.checked)
+  }
 
   return (
     <article
@@ -133,7 +138,7 @@ export default function HotelCard({
               id={compareId}
               type="checkbox"
               checked={isSelectedForCompare}
-              onChange={(e) => onCompareChange?.(hotel.code, e.target.checked)}
+              onChange={handleCompareChange}
               className="sr-only"
             />
             {isSelectedForCompare ? '✓ Comparing' : '+ Compare'}
@@ -162,7 +167,7 @@ export default function HotelCard({
                       {hotel.currency}
                     </span>
                   )}
-                  {hotel.price.toLocaleString(undefined, {
+                  {hotel.price.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}

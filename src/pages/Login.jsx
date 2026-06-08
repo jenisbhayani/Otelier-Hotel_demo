@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { FormAlert, INPUT_CLASS } from '../components/ui'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -39,14 +40,7 @@ export default function Login() {
       <p className="mt-2 text-slate-600">Sign in to search and compare hotels.</p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
-        {error && (
-          <div
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-            role="alert"
-          >
-            {error}
-          </div>
-        )}
+        <FormAlert message={error} />
 
         <div>
           <label htmlFor="login-email" className="block text-sm font-medium text-slate-700">
@@ -59,7 +53,7 @@ export default function Login() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className={INPUT_CLASS}
           />
         </div>
 
@@ -75,7 +69,7 @@ export default function Login() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className={INPUT_CLASS}
           />
         </div>
 

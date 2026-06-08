@@ -10,14 +10,11 @@ import {
   YAxis,
 } from 'recharts'
 import { ChartEmptyState, HotelNameTick } from './chartShared'
+import { parseStars } from '../../utils/filterHotels'
 
 // 1-star = muted grey, 5-star = deep gold
 const STAR_COLORS = ['#94a3b8', '#64748b', '#f59e0b', '#d97706', '#b45309']
 
-function parseStarRating(categoryLabel) {
-  const match = String(categoryLabel ?? '').match(/^(\d)/)
-  return match ? Number(match[1]) : 0
-}
 
 function starColor(stars) {
   return stars >= 1 && stars <= 5 ? STAR_COLORS[stars - 1] : '#94a3b8'
@@ -54,7 +51,7 @@ function StarYTick({ x, y, payload }) {
  */
 export default function RatingComparisonChart({ hotels }) {
   const data = hotels.map((h) => {
-    const stars = parseStarRating(h.categoryLabel)
+    const stars = parseStars(h.categoryLabel)
     return { name: h.name, stars, categoryLabel: h.categoryLabel ?? 'N/A', fill: starColor(stars) }
   })
 
@@ -64,7 +61,7 @@ export default function RatingComparisonChart({ hotels }) {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 10, right: 24, left: 16, bottom: 24 }}>
+      <BarChart data={data} margin={{ top: 10, right: 24, left: 16, bottom: 48 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
 
         <XAxis
@@ -72,7 +69,7 @@ export default function RatingComparisonChart({ hotels }) {
           tick={<HotelNameTick />}
           tickLine={false}
           axisLine={{ stroke: '#e2e8f0' }}
-          label={{ value: 'Hotel', position: 'insideBottom', offset: -16, fontSize: 12, fill: '#64748b' }}
+          label={{ value: 'Hotel', position: 'bottom', offset: 5, fontSize: 12, fill: '#64748b' }}
         />
 
         <YAxis

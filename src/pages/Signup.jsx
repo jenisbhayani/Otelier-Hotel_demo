@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { FormAlert, INPUT_CLASS } from '../components/ui'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -56,14 +57,7 @@ export default function Signup() {
       <p className="mt-2 text-slate-600">Create an account to access the hotel dashboard.</p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
-        {error && (
-          <div
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-            role="alert"
-          >
-            {error}
-          </div>
-        )}
+        <FormAlert message={error} />
 
         {successMessage && (
           <div
@@ -85,7 +79,7 @@ export default function Signup() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className={INPUT_CLASS}
           />
         </div>
 
@@ -101,7 +95,7 @@ export default function Signup() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className={INPUT_CLASS}
           />
         </div>
 
@@ -120,7 +114,7 @@ export default function Signup() {
             minLength={6}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className={INPUT_CLASS}
           />
         </div>
 

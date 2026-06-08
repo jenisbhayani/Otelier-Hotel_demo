@@ -18,4 +18,13 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    // Context files intentionally co-export a Provider component and a custom
+    // hook from the same module — a standard pattern for React context.
+    // The react-refresh rule flags this as a false positive.
+    files: ['src/context/**/*.{js,jsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

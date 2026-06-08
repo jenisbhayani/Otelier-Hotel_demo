@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   getDestinations,
+  getDestinationsCached,
   getHotelDetails,
   HotelbedsError,
   searchHotels,
@@ -10,32 +11,12 @@ import FilterSidebar from '../components/FilterSidebar'
 import HotelList from '../components/HotelList'
 import SearchForm from '../components/SearchForm'
 import { useCompare } from '../context/CompareContext'
+import { useSearch } from '../context/SearchContext'
 import { useHotelFilters } from '../hooks/useHotelFilters'
 import { useLoadMore } from '../hooks/usePagination'
 import { contentString, resolveHotelImageUrl, toHotelCardModel } from '../utils/hotelDisplay'
 
 const DEST_PARAMS = { countryCodes: 'ES,US,GB,FR', language: 'ENG' }
-
-// ─── Cache helpers ────────────────────────────────────────────────────────────
-
-function buildDestCacheKey() {
-  const keys = Object.keys(DEST_PARAMS).sort()
-  const inner = keys.map((k) => `${JSON.stringify(k)}:${JSON.stringify(DEST_PARAMS[k])}`).join(',')
-  return `hotelbeds-cache:destinations:{${inner}}`
-}
-
-function readDestinationsFromCache() {
-  try {
-    const raw = window.localStorage.getItem(buildDestCacheKey())
-    if (!raw) return null
-    const entry = JSON.parse(raw)
-    if (!entry?.data || !Array.isArray(entry.data.destinations)) return null
-    if (entry.expiresAt && Date.now() > entry.expiresAt) return null
-    return entry.data.destinations
-  } catch {
-    return null
-  }
-}
 
 // ─── Error helper ─────────────────────────────────────────────────────────────
 
@@ -49,22 +30,26 @@ function getErrorMessage(error) {
 
 export default function Dashboard() {
   // Destinations — synchronously seeded from localStorage cache
-  const [destinations, setDestinations] = useState(() => readDestinationsFromCache() ?? [])
+  const [destinations, setDestinations] = useState(() => getDestinationsCached(DEST_PARAMS) ?? [])
   const [destinationsLoading, setDestinationsLoading] = useState(
-    () => readDestinationsFromCache() === null,
+    () => getDestinationsCached(DEST_PARAMS) === null,
   )
   const [destinationsError, setDestinationsError] = useState('')
 
-  // Full hotel result set from the last search (never mutated by filters)
-  const [hotels, setHotels] = useState([])
+  // Sort order for filtered results — applied before Load More
+  // 'none' | 'asc' | 'desc'
+  const [sortOrder, setSortOrder] = useState('none')
+
+  // Hotel search results — stored in context so they survive navigation
+  // (e.g. going to Compare page and returning to Dashboard).
+  const { hotels, hasSearched, setSearchResults } = useSearch()
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState('')
-  const [hasSearched, setHasSearched] = useState(false)
 
   // Client-side filters — operates on `hotels`, returns `filteredHotels`
   const {
     filters,
-    filteredHotels,
+    filteredHotels: filteredUnsorted,
     options,
     activeCount,
     isEmpty: filtersEmpty,
@@ -75,10 +60,20 @@ export default function Dashboard() {
     clearAll: clearFilters,
   } = useHotelFilters(hotels)
 
+  // Apply price sort on top of the filtered results
+  const filteredHotels = useMemo(() => {
+    if (sortOrder === 'none') return filteredUnsorted
+    return [...filteredUnsorted].sort((a, b) =>
+      sortOrder === 'asc' ? a.price - b.price : b.price - a.price,
+    )
+  }, [filteredUnsorted, sortOrder])
+
   // Load-more — operates on `filteredHotels`, auto-resets when filters change
   const { visible: visibleHotels, hasMore, loadMore, reset: resetVisible } = useLoadMore(filteredHotels)
 
-  const { selectedCodes, toggleHotel, count: compareCount } = useCompare()
+  // Only the count is needed here — selectedCodes and toggleHotel are
+  // consumed directly inside HotelCard via useCompare().
+  const { count: compareCount } = useCompare()
 
   const destinationNameByCode = useMemo(
     () => new Map(destinations.map((d) => [d.code, contentString(d.name)])),
@@ -114,17 +109,9 @@ export default function Dashboard() {
     return () => { isMounted = false }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Compare handler ───────────────────────────────────────────────────────
-
-  const handleCompareChange = useCallback((code, isSelected) => {
-    const hotel = hotels.find((h) => h.code === code)
-    if (!hotel) return
-    toggleHotel(hotel, isSelected)
-  }, [hotels, toggleHotel])
-
   // ── Hotel detail enrichment (images + facilities) ─────────────────────────
 
-  async function enrichHotels(searchResults, destinationCode) {
+  const enrichHotels = useCallback(async (searchResults, destinationCode) => {
     const codes = searchResults.map((h) => h.code).filter(Boolean)
     if (codes.length === 0) return []
 
@@ -158,17 +145,24 @@ export default function Dashboard() {
         facilityGroups: facilitiesByCode.get(hotel.code) ?? [],
       }),
     )
-  }
+  }, [destinationNameByCode])
 
   // ── Search handler ────────────────────────────────────────────────────────
+  //
+  // A ref-based request ID guards against race conditions: if the user
+  // triggers a second search before the first completes, the stale response
+  // is silently discarded instead of overwriting the fresh results.
 
-  async function handleSearch({ destinationCode, checkIn, checkOut, adults }) {
+  const searchIdRef = useRef(0)
+
+  const handleSearch = useCallback(async ({ destinationCode, checkIn, checkOut, adults }) => {
+    const myId = ++searchIdRef.current
+
     setSearchLoading(true)
     setSearchError('')
-    setHasSearched(true)
-    setHotels([])
-    clearFilters()    // reset filters so new results show unfiltered
-    resetVisible()    // snap load-more back to first 10
+    setSearchResults([])  // clears old results immediately; marks hasSearched=true
+    clearFilters()        // reset filters so new results show unfiltered
+    resetVisible()        // snap load-more back to first 10
 
     try {
       const { hotels: results } = await searchHotels({
@@ -181,14 +175,22 @@ export default function Dashboard() {
       })
 
       const cardModels = await enrichHotels(results, destinationCode)
-      setHotels(cardModels)
+
+      // Discard stale responses from earlier searches
+      if (searchIdRef.current !== myId) return
+      setSortOrder('none')          // reset sort for fresh results
+      setSearchResults(cardModels)
     } catch (error) {
+      if (searchIdRef.current !== myId) return
       setSearchError(getErrorMessage(error))
-      setHotels([])
+      // hotels already cleared above; no further action needed
     } finally {
-      setSearchLoading(false)
+      // Only the most recent search should clear the loading spinner
+      if (searchIdRef.current === myId) {
+        setSearchLoading(false)
+      }
     }
-  }
+  }, [clearFilters, resetVisible, enrichHotels, setSearchResults])
 
   // ── Layout ────────────────────────────────────────────────────────────────
 
@@ -231,17 +233,21 @@ export default function Dashboard() {
       <div className={`mt-4 ${showSidebar ? 'flex items-start gap-6' : ''}`}>
         {showSidebar && (
           <FilterSidebar
-            filters={filters}
-            options={options}
-            filteredCount={filteredHotels.length}
-            totalCount={hotels.length}
-            activeCount={activeCount}
-            isEmpty={filtersEmpty}
-            onNameChange={setName}
-            onToggleStar={toggleStar}
-            onToggleFacility={toggleFacility}
-            onToggleDestination={toggleDestination}
-            onClearAll={clearFilters}
+            state={{
+              filters,
+              options,
+              filteredCount: filteredHotels.length,
+              totalCount: hotels.length,
+              activeCount,
+              isEmpty: filtersEmpty,
+            }}
+            handlers={{
+              onNameChange: setName,
+              onToggleStar: toggleStar,
+              onToggleFacility: toggleFacility,
+              onToggleDestination: toggleDestination,
+              onClearAll: clearFilters,
+            }}
           />
         )}
 
@@ -252,10 +258,10 @@ export default function Dashboard() {
             isLoading={searchLoading}
             error={searchError}
             hasSearched={hasSearched}
-            selectedCodes={selectedCodes}
-            onCompareChange={handleCompareChange}
             hasMore={hasMore}
             onLoadMore={loadMore}
+            sortOrder={sortOrder}
+            onSortChange={setSortOrder}
           />
         </div>
       </div>

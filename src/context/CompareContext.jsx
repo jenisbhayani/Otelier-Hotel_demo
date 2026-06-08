@@ -62,44 +62,29 @@ export function CompareProvider({ children }) {
   }, [])
 
   /**
-   * Add a hotel to the comparison selection.
-   * No-op if already selected or the max limit is reached.
-   */
-  const addHotel = useCallback((hotel) => {
-    setSelected((prev) => {
-      if (prev.has(hotel.code) || prev.size >= MAX_COMPARE) return prev
-      const next = new Map(prev)
-      next.set(hotel.code, hotel)
-      saveToStorage(next)
-      return next
-    })
-  }, [])
-
-  /**
-   * Remove a hotel from the comparison selection.
-   */
-  const removeHotel = useCallback((code) => {
-    setSelected((prev) => {
-      if (!prev.has(code)) return prev
-      const next = new Map(prev)
-      next.delete(code)
-      saveToStorage(next)
-      return next
-    })
-  }, [])
-
-  /**
    * Toggle a hotel in the selection.
-   * `hotel` must be the full card model when adding (selected=true).
-   * When removing (selected=false) only `hotel.code` is needed.
+   * `hotel` must be the full card model when adding (isSelected=true).
+   * When removing (isSelected=false) only `hotel.code` is needed.
    */
   const toggleHotel = useCallback((hotel, isSelected) => {
     if (isSelected) {
-      addHotel(hotel)
+      setSelected((prev) => {
+        if (prev.has(hotel.code) || prev.size >= MAX_COMPARE) return prev
+        const next = new Map(prev)
+        next.set(hotel.code, hotel)
+        saveToStorage(next)
+        return next
+      })
     } else {
-      removeHotel(hotel.code)
+      setSelected((prev) => {
+        if (!prev.has(hotel.code)) return prev
+        const next = new Map(prev)
+        next.delete(hotel.code)
+        saveToStorage(next)
+        return next
+      })
     }
-  }, [addHotel, removeHotel])
+  }, [])
 
   /**
    * Clear the entire selection.
@@ -116,8 +101,6 @@ export function CompareProvider({ children }) {
     selectedCodes: new Set(selected.keys()),
     /** Number of currently selected hotels */
     count: selected.size,
-    /** True when the 5-hotel limit has been reached */
-    maxReached: selected.size >= MAX_COMPARE,
     toggleHotel,
     clearAll,
   }), [selected, toggleHotel, clearAll])

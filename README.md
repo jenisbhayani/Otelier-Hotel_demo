@@ -10,7 +10,7 @@ A production-quality hospitality frontend built as a technical assignment. Users
 
 | Layer | Technology |
 |---|---|
-| Framework | React 18 + Vite |
+| Framework | React 19 + Vite |
 | Routing | React Router v6 |
 | Auth & DB | Supabase (email/password, JWT) |
 | API proxy | Supabase Edge Functions (Deno) |
