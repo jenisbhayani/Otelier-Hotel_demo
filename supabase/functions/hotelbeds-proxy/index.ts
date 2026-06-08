@@ -3,7 +3,6 @@ import { buildHotelbedsHeaders } from '../_shared/hotelbeds-auth.ts'
 import { corsHeaders, handleCorsPreflight, jsonResponse } from '../_shared/cors.ts'
 import {
   normalizeAvailability,
-  normalizeCheckRates,
   normalizeDestinations,
   normalizeHotelDetails,
 } from '../_shared/normalize.ts'
@@ -11,7 +10,7 @@ import {
 const HOTELBEDS_BASE_URL =
   Deno.env.get('HOTELBEDS_BASE_URL') ?? 'https://api.test.hotelbeds.com'
 
-type Action = 'destinations' | 'searchHotels' | 'hotelDetails' | 'checkAvailability'
+type Action = 'destinations' | 'searchHotels' | 'hotelDetails'
 
 interface ProxyRequest {
   action?: Action
@@ -198,21 +197,6 @@ async function handleAction(
       return normalizeAvailability(data as Record<string, unknown>)
     }
 
-    case 'checkAvailability': {
-      const rawKeys = params.rateKeys ?? params.rateKey
-      if (!rawKeys || (Array.isArray(rawKeys) && rawKeys.length === 0)) {
-        throw new Error('rateKeys array is required for checkAvailability')
-      }
-
-      const rateKeys = Array.isArray(rawKeys) ? rawKeys : [rawKeys]
-      const rooms = rateKeys.map((rateKey) => ({
-        rateKey: String(rateKey),
-      }))
-
-      const data = await callHotelbeds('POST', '/hotel-api/1.0/checkrates', headers, { rooms })
-      return normalizeCheckRates(data as Record<string, unknown>)
-    }
-
     default:
       throw new Error(`Unknown action: ${action}`)
   }
@@ -266,7 +250,6 @@ Deno.serve(async (req) => {
     'destinations',
     'searchHotels',
     'hotelDetails',
-    'checkAvailability',
   ]
   if (!action || !validActions.includes(action)) {
     return fail(

@@ -19,13 +19,16 @@ function normalizeRate(rate: Record<string, unknown>) {
 }
 
 function normalizeRooms(rooms: unknown[]) {
-  return rooms.map((room: Record<string, unknown>) => ({
-    code: String(room.code ?? ''),
-    name: String(room.name ?? ''),
-    rates: ((room.rates as unknown[]) ?? []).map((rate) =>
-      normalizeRate(rate as Record<string, unknown>),
-    ),
-  }))
+  return rooms.map((room) => {
+    const r = room as Record<string, unknown>
+    return {
+      code: String(r.code ?? ''),
+      name: String(r.name ?? ''),
+      rates: ((r.rates as unknown[]) ?? []).map((rate) =>
+        normalizeRate(rate as Record<string, unknown>),
+      ),
+    }
+  })
 }
 
 export function normalizeDestinations(payload: {
@@ -74,21 +77,22 @@ export function normalizeAvailability(payload: Record<string, unknown>) {
     rawHotels = payload.hotels as unknown[]
   }
 
-  const hotels = rawHotels.map((item: Record<string, unknown>) => {
+  const hotels = rawHotels.map((item) => {
+    const h = item as Record<string, unknown>
     // Each item IS the hotel object directly in the Hotelbeds API response.
     // Rooms are nested inside each hotel as hotel.rooms[]
-    const rooms = normalizeRooms((item.rooms as unknown[]) ?? [])
+    const rooms = normalizeRooms((h.rooms as unknown[]) ?? [])
 
     return {
-      code: String(item.code ?? ''),
-      name: contentString(item.name),
-      categoryCode: String(item.categoryCode ?? ''),
-      destinationCode: String(item.destinationCode ?? ''),
-      latitude: Number(item.latitude ?? 0),
-      longitude: Number(item.longitude ?? 0),
-      minRate: parseAmount(item.minRate),
-      maxRate: parseAmount(item.maxRate),
-      currency: String(item.currency ?? ''),
+      code: String(h.code ?? ''),
+      name: contentString(h.name),
+      categoryCode: String(h.categoryCode ?? ''),
+      destinationCode: String(h.destinationCode ?? ''),
+      latitude: Number(h.latitude ?? 0),
+      longitude: Number(h.longitude ?? 0),
+      minRate: parseAmount(h.minRate),
+      maxRate: parseAmount(h.maxRate),
+      currency: String(h.currency ?? ''),
       rooms,
     }
   })
@@ -100,16 +104,3 @@ export function normalizeAvailability(payload: Record<string, unknown>) {
   }
 }
 
-export function normalizeCheckRates(payload: Record<string, unknown>) {
-  const hotel = (payload?.hotel as Record<string, unknown>) ?? {}
-  const rooms = normalizeRooms((hotel.rooms as unknown[]) ?? [])
-
-  return {
-    hotel: {
-      code: String(hotel.code ?? ''),
-      name: contentString(hotel.name),
-      rooms,
-    },
-    auditData: payload?.auditData ?? null,
-  }
-}
